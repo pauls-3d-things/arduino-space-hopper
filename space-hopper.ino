@@ -41,6 +41,7 @@ struct asteroid {
 asteroid asteroids[NUM_ASTEROIDS];
 
 uint16_t asteroidCount = 0;
+uint16_t highScore = 0;
 
 void drawAsteroid(asteroid& a) {
   u8g2.drawXBM(a.x, a.y - ASTEROID_SIZE, ASTEROID_SIZE, ASTEROID_SIZE, asteroid_0_bits);
@@ -124,7 +125,7 @@ void loop() {
     u8g2.setFont(u8g2_font_profont12_tf);
     u8g2.drawStr(12, 8, "SpaceHopper v1.0");
     u8g2.drawStr(4, 20, "by @pauls_3d_things");
-    u8g2.drawStr(6, 30, "~~ Press Button ~~");
+    u8g2.drawStr(6, 32, "~~ Press Button ~~");
     u8g2.sendBuffer();
 
     delay(250);
@@ -135,11 +136,18 @@ void loop() {
     }
     return;
   } else if (gameState == STOPPED) {
+    if (highScore < asteroidCount) {
+      highScore = asteroidCount;
+    }
+    for (uint8_t i = 0; i < NUM_ASTEROIDS; i++) {
+      asteroids[i].x = SCREEN_WIDTH;
+    }
+   
     u8g2.clearBuffer();
     u8g2.setFont(u8g2_font_profont12_tf);
-    u8g2.drawStr(4, 8, "SpaceHopper v1.0");
-    u8g2.drawStr(4, 20, "~~ Press Button ~~");
-    u8g2.drawStr(4, 30, String("Score: " + String(asteroidCount)).c_str());
+    u8g2.drawStr(24, 8, String("Highscore: " + String(highScore)).c_str());
+    u8g2.drawStr(34, 20, String("Score: " + String(asteroidCount)).c_str());
+    u8g2.drawStr(6, 32, "~~ Press Button ~~");
     u8g2.sendBuffer();
 
     delay(250);
@@ -159,16 +167,20 @@ void loop() {
   moveShip();
 
   for (uint8_t i = 0; i < NUM_ASTEROIDS; i++) {
-    uint8_t r = random(0, 10);
 
+    if (asteroids[i].x <= SHIP_SIZE / 2        // asteroid is close to ship
+        && abs(asteroids[i].y - shipY) <= SHIP_SIZE / 2 // and is a hit
+       ) {
+      gameState = STOPPED;
+    }
+
+    uint8_t r = random(0, 10); // randomly add an asteroid
     if (asteroids[i].x >= SCREEN_WIDTH && r == 2) {
       asteroids[i].s = random(1, ASTEROID_MAX_SPEED);
       asteroids[i].y = random(ASTEROID_SIZE, SCREEN_HEIGHT);
     }
     moveAsteroid(asteroids[i]);
   }
-
-  // TODO: calculate collisions
 
   u8g2.clearBuffer();
   u8g2.setFont(u8g2_font_profont12_tf);
