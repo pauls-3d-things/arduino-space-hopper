@@ -15,7 +15,7 @@
 #define ASTEROID_SIZE 8
 #define SCREEN_HEIGHT 32
 #define SCREEN_WIDTH 128
-#define NUM_ASTEROIDS 4
+#define NUM_ASTEROIDS 8
 #define ASTEROID_MAX_SPEED 6
 
 U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
@@ -32,7 +32,7 @@ uint8_t shipY = SCREEN_HEIGHT;
 uint8_t shipBoost = 0;
 
 struct asteroid {
-  asteroid() : x(SCREEN_WIDTH), y(SCREEN_HEIGHT), s(1) {}
+  asteroid() : x(SCREEN_WIDTH), y(SCREEN_HEIGHT), s(0) {}
   int16_t x;
   int16_t y;
   uint8_t s;
@@ -41,6 +41,7 @@ struct asteroid {
 asteroid asteroids[NUM_ASTEROIDS];
 
 uint16_t asteroidCount = 0;
+uint16_t lastScore = 0;
 uint16_t highScore = 0;
 
 void drawAsteroid(asteroid& a) {
@@ -136,17 +137,18 @@ void loop() {
     }
     return;
   } else if (gameState == STOPPED) {
-    if (highScore < asteroidCount) {
-      highScore = asteroidCount; // remember new highscore
+    if (highScore < lastScore) {
+      highScore = lastScore; // remember new highscore
     }
     for (uint8_t i = 0; i < NUM_ASTEROIDS; i++) {
       asteroids[i].x = SCREEN_WIDTH;
+      asteroids[i].s = 0;
     }
    
     u8g2.clearBuffer();
     u8g2.setFont(u8g2_font_profont12_tf);
     u8g2.drawStr(24, 8, String("Highscore: " + String(highScore)).c_str());
-    u8g2.drawStr(34, 20, String("Score: " + String(asteroidCount)).c_str());
+    u8g2.drawStr(34, 20, String("Score: " + String(lastScore)).c_str());
     u8g2.drawStr(6, 32, "~~ Press Button ~~");
     u8g2.sendBuffer();
 
@@ -172,6 +174,8 @@ void loop() {
         && abs(asteroids[i].y - shipY) <= SHIP_SIZE / 2 // and is a hit
        ) {
       gameState = STOPPED;
+      lastScore = asteroidCount;
+      asteroidCount = 0;
     }
 
     uint8_t r = random(1, max(1, 2000 / (10 + asteroidCount))); // randomly add an asteroid
