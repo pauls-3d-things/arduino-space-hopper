@@ -20,6 +20,12 @@
 
 U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
 
+enum GAMESTATE {
+  START, RUNNING, STOPPED
+};
+
+GAMESTATE gameState = START;
+
 uint8_t loopCount = 0;
 
 uint8_t shipY = SCREEN_HEIGHT;
@@ -113,6 +119,38 @@ void setup() {
 
 
 void loop() {
+  if (gameState == START) {
+    u8g2.clearBuffer();
+    u8g2.setFont(u8g2_font_profont12_tf);
+    u8g2.drawStr(12, 8, "SpaceHopper v1.0");
+    u8g2.drawStr(4, 20, "by @pauls_3d_things");
+    u8g2.drawStr(6, 30, "~~ Press Button ~~");
+    u8g2.sendBuffer();
+
+    delay(250);
+
+    buttonState = digitalRead(D5);
+    if (buttonState == HIGH) {
+      gameState = RUNNING;
+    }
+    return;
+  } else if (gameState == STOPPED) {
+    u8g2.clearBuffer();
+    u8g2.setFont(u8g2_font_profont12_tf);
+    u8g2.drawStr(4, 8, "SpaceHopper v1.0");
+    u8g2.drawStr(4, 20, "~~ Press Button ~~");
+    u8g2.drawStr(4, 30, String("Score: " + String(asteroidCount)).c_str());
+    u8g2.sendBuffer();
+
+    delay(250);
+
+    buttonState = digitalRead(D5);
+    if (buttonState == HIGH) {
+      gameState = START;
+    }
+    return;
+  }
+
   loopCount++;
   buttonState = digitalRead(D5);
   if (buttonState == HIGH) {
@@ -129,6 +167,8 @@ void loop() {
     }
     moveAsteroid(asteroids[i]);
   }
+
+  // TODO: calculate collisions
 
   u8g2.clearBuffer();
   u8g2.setFont(u8g2_font_profont12_tf);
