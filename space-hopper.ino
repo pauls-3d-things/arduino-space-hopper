@@ -137,7 +137,7 @@ void loop() {
     return;
   } else if (gameState == STOPPED) {
     if (highScore < asteroidCount) {
-      highScore = asteroidCount;
+      highScore = asteroidCount; // remember new highscore
     }
     for (uint8_t i = 0; i < NUM_ASTEROIDS; i++) {
       asteroids[i].x = SCREEN_WIDTH;
@@ -174,8 +174,8 @@ void loop() {
       gameState = STOPPED;
     }
 
-    uint8_t r = random(0, 10); // randomly add an asteroid
-    if (asteroids[i].x >= SCREEN_WIDTH && r == 2) {
+    uint8_t r = random(1, max(1, 2000 / (10 + asteroidCount))); // randomly add an asteroid
+    if (asteroids[i].x >= SCREEN_WIDTH && r == 1) {
       asteroids[i].s = random(1, ASTEROID_MAX_SPEED);
       asteroids[i].y = random(ASTEROID_SIZE, SCREEN_HEIGHT);
     }
