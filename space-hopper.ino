@@ -7,50 +7,91 @@
 #include "ship_1.h"
 #include "ship_2.h"
 #include "ship_3.h"
+#include "asteroid_0.h"
 
 #define FRAME_RATE 16
 #define BOOST_AMOUNT 4
+#define SHIP_SIZE 8
+#define ASTEROID_SIZE 8
+#define SCREEN_HEIGHT 32
+#define SCREEN_WIDTH 128
+#define NUM_ASTEROIDS 4
+#define ASTEROID_MAX_SPEED 6
 
 U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
 
 uint8_t loopCount = 0;
 
-uint8_t shipY = 32;
+uint8_t shipY = SCREEN_HEIGHT;
 uint8_t shipBoost = 0;
+
+struct asteroid {
+  asteroid() : x(SCREEN_WIDTH), y(SCREEN_HEIGHT), s(1) {}
+  int16_t x;
+  int16_t y;
+  uint8_t s;
+};
+
+asteroid asteroids[NUM_ASTEROIDS];
+
+uint16_t asteroidCount = 0;
+
+void drawAsteroid(asteroid& a) {
+  u8g2.drawXBM(a.x, a.y - ASTEROID_SIZE, ASTEROID_SIZE, ASTEROID_SIZE, asteroid_0_bits);
+}
+
+void printAsteroid(asteroid& a) {
+  Serial.print(a.x);
+  Serial.print(", ");
+  Serial.print(a.y);
+  Serial.print(", ");
+  Serial.println(a.s);
+}
+
+void moveAsteroid(asteroid& a) {
+  if (a.x < 0) {
+    // remove asteroid and stop it
+    asteroidCount++;
+    a.x = SCREEN_WIDTH;
+    a.y = SCREEN_HEIGHT;
+    a.s = 0;
+  } else {
+    a.x -= a.s;
+  }
+}
 
 void drawShip() {
   if (shipBoost == 0 && shipY > 24) {
-    u8g2.drawXBM(0, shipY - 8, 8, 8, ship_0_bits);
+    u8g2.drawXBM(0, shipY - SHIP_SIZE, SHIP_SIZE, SHIP_SIZE, ship_0_bits);
   } else {
     switch (loopCount % 3) {
       case 0:
-        u8g2.drawXBM(0, shipY - 8, 8, 8, ship_1_bits);
+        u8g2.drawXBM(0, shipY - SHIP_SIZE, SHIP_SIZE, SHIP_SIZE, ship_1_bits);
         break;
       case 1:
-        u8g2.drawXBM(0, shipY - 8, 8, 8, ship_2_bits);
+        u8g2.drawXBM(0, shipY - SHIP_SIZE, SHIP_SIZE, SHIP_SIZE, ship_2_bits);
         break;
       case 2:
-        u8g2.drawXBM(0, shipY - 8, 8, 8, ship_3_bits);
-        break;
       default:
-        u8g2.drawXBM(0, shipY - 8, 8, 8, ship_0_bits);
+        u8g2.drawXBM(0, shipY - SHIP_SIZE, SHIP_SIZE, SHIP_SIZE, ship_3_bits);
     }
   }
 
 }
 
 void moveShip() {
-  if (shipY < 32) {
+  if (shipY < SCREEN_HEIGHT) {
     shipY++;
   }
 
   // only boost if we dont go out side the screen
-  if (shipY > 8) {
+  if (shipY > SHIP_SIZE) {
     // only remove as much height as screen is available
-    shipY -= shipY - 8 > shipBoost ? shipBoost : shipY;
+    shipY -= shipY - SHIP_SIZE > shipBoost ? shipBoost : shipY;
   }
 
-  shipY = shipY < 8 ? 8 : shipY;
+  // make sure ship keeps inside screen (remove?)
+  shipY = shipY < SHIP_SIZE ? SHIP_SIZE : shipY;
 
   if (shipBoost > 0) {
     shipBoost--;
@@ -58,7 +99,6 @@ void moveShip() {
 }
 
 void boostShip() {
-  Serial.println("boosted");
   shipBoost = BOOST_AMOUNT;
 }
 
@@ -78,19 +118,29 @@ void loop() {
   if (buttonState == HIGH) {
     boostShip();
   }
-
   moveShip();
+
+  for (uint8_t i = 0; i < NUM_ASTEROIDS; i++) {
+    uint8_t r = random(0, 10);
+
+    if (asteroids[i].x >= SCREEN_WIDTH && r == 2) {
+      asteroids[i].s = random(1, ASTEROID_MAX_SPEED);
+      asteroids[i].y = random(ASTEROID_SIZE, SCREEN_HEIGHT);
+    }
+    moveAsteroid(asteroids[i]);
+  }
 
   u8g2.clearBuffer();
   u8g2.setFont(u8g2_font_profont12_tf);
-  u8g2.drawStr(10, 10, String("Y:" + String(shipY)).c_str());
+  u8g2.drawStr(110, 10, String(asteroidCount).c_str());
 
   drawShip();
+  for (uint8_t i = 0; i < NUM_ASTEROIDS; i++) {
+    drawAsteroid(asteroids[i]);
+  }
 
   u8g2.sendBuffer();
 
   delay(1000 / FRAME_RATE);
-  Serial.println("loop");
-
 }
 
