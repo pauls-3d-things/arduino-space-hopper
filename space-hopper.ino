@@ -1,6 +1,8 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <U8g2lib.h>
+#include <EEPROM.h>
+
 
 // graphics
 #include "ship_0.h"
@@ -18,6 +20,9 @@
 #define NUM_ASTEROIDS 12
 #define ASTEROID_MAX_SPEED 6
 #define ROCKET_SPEED 3
+
+#define D5 5
+#define D6 6
 
 // If you want to use a different screen
 // change the constructor here :), and defines above
@@ -139,7 +144,32 @@ void boostShip() {
   shipBoost = BOOST_AMOUNT;
 }
 
+int getHigh()
+{
+  int score=0;
+  for(int i=0;i<=20;i++)//20 bytes for storing highscore
+  {
+   score+=EEPROM.read(i);
+  }
+  return score;
+  }
 
+void saveHigh(int score)
+{
+  int a=score%20;
+  int b=(score-a)/20;
+  if(score<5100)
+  
+  {
+
+for (int i = 0; i <= 19; i++){
+    EEPROM.write(i, b);
+}
+EEPROM.write(20, a);
+    }
+  }
+
+  
 int buttonState1 = 0;
 int buttonState2 = 0;
 
@@ -147,8 +177,15 @@ void setup() {
   Serial.begin(9600);
   pinMode(D5, INPUT);
   pinMode(D6, INPUT);
+  pinMode(7, INPUT_PULLUP);
+  if(digitalRead(7)==LOW)//if pin d7 is low during startup then reset highscore
+  {
+      for (int i = 0; i < 21; i++)
+   { EEPROM.write(i, 0);}
+    }
   u8g2.begin();
   u8g2.setContrast(0);
+   highScore = getHigh();
 }
 
 
@@ -172,6 +209,7 @@ void loop() {
   } else if (gameState == STOPPED) {
     if (highScore < lastScore) {
       highScore = lastScore; // remember new highscore
+      saveHigh(highScore);
     }
     for (uint8_t i = 0; i < NUM_ASTEROIDS; i++) {
       asteroids[i].x = SCREEN_WIDTH;
@@ -263,4 +301,3 @@ void loop() {
 
   delay(1000 / FRAME_RATE);
 }
-
